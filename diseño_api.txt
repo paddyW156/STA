@@ -1,0 +1,14 @@
+Buscar una película: [GET] /peliculas/[id]
+Crear una película: [POST] /peliculas Cuerpo: {Nombre: '--', Año: '--', Actores:[--,--]}
+Borrar una película: [DELETE] /peliculas/[id]
+
+- Cambiar nombre: [PATCH] /peliculas/[id] Cuerpo: {Nombre: '--'}
+- Cambiar año: [PATCH] /peliculas/[id] Cuerpo: {Año: '--'}
+- Añadir actor: [POST] /peliculas/[id]/actores Cuerpo: {Nombre: '--', Año: '--'}
+- Quitar actor: [DELETE] /peliculas/[id]/actores/[id_actor]
+
+Crear un actor: [POST] /actores Cuerpo: {ID:'--', Nombre: '--', Año Nacimiento: '--'}
+Borrar un actor: [DELETE] /actores/[id_actor]
+- Modificar nombre actor: [PATCH] /actores/[id_actor] Cuerpo: {Nombre: '--'}
+- Modificar año actor: [PATCH] /actores/[id_actor] Cuerpo: {Año: '--'}
+
