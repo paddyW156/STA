@@ -5,15 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Web de Prácticas</title>
     <link rel="stylesheet" href="estilos.css">
+    <script src="alert.js" defer></script>
+    <script src="infoPeli.js" defer></script>
 </head>
 <body>
     <div class="container">
         <h1>Bienvenido a mi Web</h1>
-        <p>Esta es una web de práctica donde aprendemos HTML y CSS. ¡Es simple pero funcional!</p>
+        <p>Introduce el título de una película para ver más información</p>
         
         <form>
-            <input type="text" placeholder="Escribe algo..." />
-            <button type="submit">Enviar</button>
+            <input type="text" id="titulo" placeholder="Título película..." />
+            // Cuando pulso el botón, aparece una alerta acorde al script infoPeli.js
+            <button id="miBoton" type="button">Haz click</button>
+            <p id="mensaje"></p>
         </form>
     </div>
 </body>
