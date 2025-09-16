@@ -5,6 +5,13 @@ const input = document.getElementById('titulo');
 // ⚠️ Reemplaza "TU_API_KEY" con tu key real de OMDb
 const API_KEY = "ffd61bd5";  
 
+input.addEventListener('keypress', function(event) {
+    if (event.key === "Enter") {
+        event.preventDefault(); // evita submit
+        btn.click(); // simula click del botón
+    }
+});
+
 btn.addEventListener('click', async () => {
   const titulo = input.value.trim();
 
