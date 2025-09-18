@@ -11,7 +11,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: '',
+  password: 'uni',
   database: 'sta'
 });
 
@@ -76,7 +76,7 @@ app.post('/peliculas/:id/actores', async (req, res) => {
 
   // 1️⃣ Crear actor
   const [actorExistente] = await pool.query(
-    'SELECT * FROM actores WHERE nombre = ? AND anio_nacimiento = ?',
+    'SELECT * FROM actores WHERE nombre = ? AND anioNacimiento = ?',
     [Nombre, Año]
   );
 
@@ -87,7 +87,7 @@ app.post('/peliculas/:id/actores', async (req, res) => {
   } else {
     // Crear nuevo actor
     const [result] = await pool.query(
-      'INSERT INTO actores (nombre, anio_nacimiento) VALUES (?, ?)',
+      'INSERT INTO actores (nombre, anioNacimiento) VALUES (?, ?)',
       [Nombre, Año]
     );
     id_actor = result.insertId;
@@ -118,11 +118,17 @@ app.delete('/peliculas/:id/actores/:id_actor', async (req, res) => {
 // RUTAS API ACTORES
 // ======================
 
+// Listar actores
+app.get('/actores', async (req, res) => {
+  const [rows] = await pool.query('SELECT * FROM actores');
+  res.json(rows);
+});
+
 // Crear actor
 app.post('/actores', async (req, res) => {
   const { nombreActor, anioNacimiento } = req.body;
   const [result] = await pool.query(
-    'INSERT INTO actores (nombreActor, anio_nacimiento) VALUES (?, ?)',
+    'INSERT INTO actores (nombreActor, anioNacimiento) VALUES (?, ?)',
     [nombreActor, anioNacimiento]
   );
   res.status(201).json({ id: result.insertId, nombreActor, anioNacimiento });
@@ -143,7 +149,7 @@ app.patch('/actores/:id_actor', async (req, res) => {
     await pool.query('UPDATE actores SET nombreActor=? WHERE id=?', [nombreActor, id_actor]);
   }
   if (anioNacimiento) {
-    await pool.query('UPDATE actores SET anio_nacimiento=? WHERE id=?', [anioNacimiento, id_actor]);
+    await pool.query('UPDATE actores SET anioNacimiento=? WHERE id=?', [anioNacimiento, id_actor]);
   }
   res.json({ mensaje: `Actor ${id_actor} actualizado` });
 });
