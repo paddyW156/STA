@@ -76,7 +76,7 @@ app.post('/peliculas/:id/actores', async (req, res) => {
 
   // 1️⃣ Crear actor
   const [actorExistente] = await pool.query(
-    'SELECT * FROM actores WHERE nombre = ? AND anioNacimiento = ?',
+    'SELECT * FROM actores WHERE nombreActor = ? AND anioNacimiento = ?',
     [Nombre, Año]
   );
 
@@ -87,7 +87,7 @@ app.post('/peliculas/:id/actores', async (req, res) => {
   } else {
     // Crear nuevo actor
     const [result] = await pool.query(
-      'INSERT INTO actores (nombre, anioNacimiento) VALUES (?, ?)',
+      'INSERT INTO actores (nombreActor, anioNacimiento) VALUES (?, ?)',
       [Nombre, Año]
     );
     id_actor = result.insertId;
@@ -100,6 +100,17 @@ app.post('/peliculas/:id/actores', async (req, res) => {
   );
 
   res.json({ mensaje: `Actor ${Nombre} añadido a película ${id}`, id_actor });
+});
+
+//Mostrar actores de una película (necesitarías hacer JOIN, no hay ruta directa)
+app.get('/peliculas/:id/actores', async (req, res) => {
+  const { id } = req.params;
+  const [rows] = await pool.query(`
+    SELECT a.id_actor, a.nombreActor, a.anioNacimiento 
+    FROM actores a
+    JOIN actor_peli ap ON a.id_actor = ap.id_actor
+    WHERE ap.id_peli = ?`, [id]);
+  res.json(rows);
 });
 
 // Quitar actor de película (solo elimina la relación)
@@ -131,14 +142,25 @@ app.post('/actores', async (req, res) => {
     'INSERT INTO actores (nombreActor, anioNacimiento) VALUES (?, ?)',
     [nombreActor, anioNacimiento]
   );
-  res.status(201).json({ id: result.insertId, nombreActor, anioNacimiento });
+  res.status(201).json({ id_actor: result.insertId, nombreActor, anioNacimiento });
 });
 
 // Borrar actor
 app.delete('/actores/:id_actor', async (req, res) => {
   const { id_actor } = req.params;
-  await pool.query('DELETE FROM actores WHERE id=?', [id_actor]);
-  res.json({ mensaje: `Actor ${id_actor} eliminado` });
+
+  try {
+    // 1. Borrar relaciones en actor_peli
+    await pool.query('DELETE FROM actor_peli WHERE id_actor = ?', [id_actor]);
+
+    // 2. Borrar actor
+    await pool.query('DELETE FROM actores WHERE id_actor = ?', [id_actor]);
+
+    res.json({ mensaje: `Actor ${id_actor} eliminado y relaciones borradas` });
+  } catch (err) {
+    console.error("Error al borrar actor:", err);
+    res.status(500).json({ error: "No se pudo eliminar el actor" });
+  }
 });
 
 // Modificar actor
@@ -146,10 +168,10 @@ app.patch('/actores/:id_actor', async (req, res) => {
   const { id_actor } = req.params;
   const { nombreActor, anioNacimiento } = req.body;
   if (nombreActor) {
-    await pool.query('UPDATE actores SET nombreActor=? WHERE id=?', [nombreActor, id_actor]);
+    await pool.query('UPDATE actores SET nombreActor=? WHERE id_actor=?', [nombreActor, id_actor]);
   }
   if (anioNacimiento) {
-    await pool.query('UPDATE actores SET anioNacimiento=? WHERE id=?', [anioNacimiento, id_actor]);
+    await pool.query('UPDATE actores SET anioNacimiento=? WHERE id_actor=?', [anioNacimiento, id_actor]);
   }
   res.json({ mensaje: `Actor ${id_actor} actualizado` });
 });

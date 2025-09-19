@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
       actores.forEach(a => {
         const li = document.createElement("li");
         li.textContent = `${a.nombreActor} (${a.anioNacimiento})`;
-        li.innerHTML += ` <button onclick="eliminarActor(${a.id})">❌</button>`;
+        li.innerHTML += ` <button onclick="eliminarActor(${a.id_actor})">❌</button>`;
         lista.appendChild(li);
       });
     } catch (e) {
@@ -33,14 +33,15 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({ nombreActor: nombre, anioNacimiento: anio })
       });
       const data = await res.json();
-      alert(`Actor añadido con id ${data.id_actor}`);
+      alert(`Actor añadido: ${JSON.stringify(data)}`);
+      //alert(`Actor añadido con id ${data}`);
     } catch (e) {
       console.error(e);
     }
   });
 });
 
-async function eliminarActor(id) {
+async function eliminarActor(id_actor) {
   if (!confirm("¿Seguro que quieres eliminar este actor?")) return;
   await fetch(`/actores/${id_actor}`, { method: "DELETE" });
   alert("Actor eliminado");
