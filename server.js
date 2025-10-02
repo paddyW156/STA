@@ -4,8 +4,14 @@ const app = express();
 const PORT = 3000;
 const mysql = require('mysql2/promise');
 
+const cors = require('cors');
+
 app.use(express.json()); // Para leer JSON en body
 app.use(express.static(path.join(__dirname, 'public')));
+// Permitir peticiones desde React (puedes poner * en desarrollo)
+app.use(cors({
+  origin: 'http://localhost:5173'
+}));
 
 // --- Conexión a MySQL ---
 const pool = mysql.createPool({
