@@ -2,125 +2,98 @@ import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 function App() {
-  const [peliculas, setPeliculas] = useState([])  // estado para todas las películas
-  const scrollRef1 = useRef(null)
-  const scrollRef2 = useRef(null)
 
-  // Al cargar, traer las películas del servidor
+  const [peliculas, setPeliculas] = useState([])
+
+  // Cargar películas del backend
   useEffect(() => {
     const fetchPeliculas = async () => {
       try {
-        const resp = await fetch('http://localhost:3000/peliculas')  // ajusta la URL si tu servidor está en otro puerto / dominio
-        if (!resp.ok) {
-          console.error("Error al traer películas:", resp.status, resp.statusText)
-          return
-        }
+        const resp = await fetch('http://localhost:3000/peliculas')
+        if (!resp.ok) throw new Error(`Error HTTP: ${resp.status}`)
         const data = await resp.json()
         setPeliculas(data)
       } catch (err) {
-        console.error("Error en fetch:", err)
+        console.error("Error al traer películas:", err)
       }
     }
 
     fetchPeliculas()
   }, [])
 
-  // Centrar el scroll al cargar, una vez que las películas estén cargadas
-  useEffect(() => {
-    const scrollToCenter = (ref) => {
-      if (ref.current) {
-        const container = ref.current
-        const scrollWidth = container.scrollWidth
-        const clientWidth = container.clientWidth
-        container.scrollLeft = (scrollWidth - clientWidth) / 2
-      }
-    }
-    scrollToCenter(scrollRef1)
-    scrollToCenter(scrollRef2)
-  }, [peliculas])  // depende del estado de películas, para que se centre después de cargar
+  // Categorías de ejemplo (puedes filtrarlas según tu BD)
+  const categorias = ["Acción", "Aventura"].map(cat => ({
+  nombre: cat,
+  peliculas: peliculas.filter(p => p.categoria === cat)
+  }))
+  
+
 
   return (
-    <div style={styles.total}>
-      <div style={styles.card}>
+    <div >
+      <header className='total'>
         <h1>FILM4u</h1>
-        <p style={styles.slogan}>your film, 4 u</p>
-      </div>
+        <p className='slogan'>your film, 4 u</p>
+      </header>
 
-      {/* Scroll de películas en la categoría 1 (puedes tener múltiples categorías si haces filtros) */}
-      <div style={styles.categoryContainer}>
-        <h3>Películas:</h3>
-        <div style={styles.scrollContainer} ref={scrollRef1}>
-          {peliculas.map((peli, idx) => (
-            <div style={styles.item} key={`peli1-${idx}`}>
-              {peli.nombrePeli} <br /> ({peli.anio})
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Ejemplo: puedes repetir para otra categoría */}
-      <div style={styles.categoryContainer}>
-        <h3>Otra sección películas:</h3>
-        <div style={styles.scrollContainer} ref={scrollRef2}>
-          {peliculas.map((peli, idx) => (
-            <div style={styles.item} key={`peli2-${idx}`}>
-              {peli.nombrePeli} <br /> ({peli.anio})
-            </div>
-          ))}
-        </div>
-      </div>
+      {categorias.map((cat, idx) => (
+        <Category key={idx} nombre={cat.nombre} peliculas={cat.peliculas} />
+      ))}
     </div>
   )
 }
 
 export default App
 
-const styles = {
-  total: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    backgroundColor: '#C8a2c8',
-    minHeight: '100vh',
-    width: '100vw',
-    overflowY: 'auto'
-  },
-  card: {
-    marginTop: '10px',
-    marginBottom: '20px',
-    textAlign: 'center'
-  },
-  slogan: {
-    fontStyle: 'italic',
-    marginTop: '1px',
-    fontSize: '20px'
-  },
-  categoryContainer: {
-    width: '95%',
-    margin: '20px 0',
-    padding: '10px',
-    borderRadius: '8px',
-    backgroundColor: '#fff'
-  },
-  scrollContainer: {
-    width: '100%',
-    overflowX: 'auto',
-    whiteSpace: 'nowrap',
-    border: '1px solid black',
-    padding: '0 16px',
-    boxSizing: 'border-box',
-  },
-  item: {
-    display: 'inline-block',
-    width: '200px',
-    height: '120px',
-    marginRight: '10px',
-    backgroundColor: '#A982B9',
-    color: 'white',
-    textAlign: 'center',
-    lineHeight: '24px',
-    padding: '10px',
-    borderRadius: '8px',
-    fontWeight: 'bold'
-  }
+// =============================
+// 🔹 Función: Category
+// =============================
+function Category({ nombre, peliculas }) {
+  const scrollRef = useRef(null)
+
+  // Centrar scroll una vez cargadas las pelis
+  useEffect(() => {
+    if (scrollRef.current) {
+      const el = scrollRef.current
+      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2
+    }
+  }, [peliculas])
+
+  return (
+    <div className='categoryContainer'>
+      <h3>{nombre}</h3>
+      <div className='scrollContainer' ref={scrollRef}>
+        {peliculas.map((peli, idx) => (
+          <MovieCard key={idx} peli={peli} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// =============================
+// 🔹 Función: MovieCard
+// =============================
+function MovieCard({ peli }) {
+  const [mostrarInfo, setMostrarInfo] = useState(false)
+
+  return (
+    <div className='item'>
+      <h4>{peli.nombrePeli}</h4>
+
+      <button
+        className='buttom'
+        onClick={() => setMostrarInfo(!mostrarInfo)}
+      >
+        {mostrarInfo ? "Ocultar info" : "Ver más"}
+      </button>
+
+      {mostrarInfo && (
+        <div className='infoBox'>
+          <p>Año: {peli.anio}</p>
+          <p>Director: {peli.director}</p>
+        </div>
+      )}
+    </div>
+  )
 }

@@ -7,7 +7,8 @@ const mysql = require('mysql2/promise');
 const cors = require('cors');
 
 app.use(express.json()); // Para leer JSON en body
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public')));//Todo lo de la carpeta public, se mostrará por navegador
+
 // Permitir peticiones desde React (puedes poner * en desarrollo)
 app.use(cors({
   origin: 'http://localhost:5173'
@@ -17,7 +18,7 @@ app.use(cors({
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: 'uni',
+  password: 'root',
   database: 'sta'
 });
 
