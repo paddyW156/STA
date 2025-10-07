@@ -46,6 +46,31 @@ app.get('/peliculas', async (req, res) => {
   res.json(rows);
 });
 
+app.get('/peliculas_info', async (req, res) => {
+  try {
+    const [result] = await pool.query(`
+      SELECT 
+        p.nombrePeli,
+        p.anio,
+        p.director,
+        p.categoria,
+        GROUP_CONCAT(a.nombreActor SEPARATOR ', ') AS actores
+      FROM peliculas p
+      JOIN actor_peli pa ON p.id = pa.id_peli
+      JOIN actores a ON pa.id_actor = a.id_actor
+      GROUP BY p.id, p.nombrePeli, p.anio, p.categoria
+      ORDER BY p.nombrePeli;
+    `);
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error('Error al obtener películas:', error);
+    res.status(500).json({ error: 'Error al obtener la información de películas' });
+  }
+});
+
+
+
 // Crear película
 app.post('/peliculas', async (req, res) => {
   const { nombrePeli, anio } = req.body;
@@ -55,6 +80,7 @@ app.post('/peliculas', async (req, res) => {
   );
   res.status(201).json({ id: result.insertId, nombrePeli, anio });
 });
+
 
 // Borrar película
 app.delete('/peliculas/:id', async (req, res) => {

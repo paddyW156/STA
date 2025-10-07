@@ -2,14 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 function App() {
-
   const [peliculas, setPeliculas] = useState([])
 
   // Cargar películas del backend
   useEffect(() => {
     const fetchPeliculas = async () => {
       try {
-        const resp = await fetch('http://localhost:3000/peliculas')
+        const resp = await fetch('http://localhost:3000/peliculas_info')
         if (!resp.ok) throw new Error(`Error HTTP: ${resp.status}`)
         const data = await resp.json()
         setPeliculas(data)
@@ -20,9 +19,9 @@ function App() {
 
     fetchPeliculas()
   }, [])
-
+  
   // Categorías de ejemplo (puedes filtrarlas según tu BD)
-  const categorias = ["Acción", "Aventura"].map(cat => ({
+  const categorias = ["Acción", "Aventura", "Animación"].map(cat => ({
   nombre: cat,
   peliculas: peliculas.filter(p => p.categoria === cat)
   }))
@@ -72,7 +71,7 @@ function Category({ nombre, peliculas }) {
 }
 
 // =============================
-// 🔹 Función: MovieCard
+// 🔹 Función: pelicula
 // =============================
 function MovieCard({ peli }) {
   const [mostrarInfo, setMostrarInfo] = useState(false)
@@ -92,6 +91,7 @@ function MovieCard({ peli }) {
         <div className='infoBox'>
           <p>Año: {peli.anio}</p>
           <p>Director: {peli.director}</p>
+          <p>Actores: {peli.actores}</p>
         </div>
       )}
     </div>
