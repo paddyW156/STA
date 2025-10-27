@@ -1,0 +1,12 @@
+{
+  "name": "kahoot-server",
+  "version": "1.0.0",
+  "description": "Servidor WebSocket para Kahoot clone",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}
