@@ -1,8 +1,59 @@
 const WebSocket = require('ws');
 const http = require('http');
 const os = require('os');
+const fs = require('fs');
+const path = require('path');
 
-// === Obtener IP local (para conexiones LAN) ===
+// === Archivo de usuarios ===
+const USERS_FILE = path.join(__dirname, 'users.json');
+function loadUsers() {
+  try {
+    const data = fs.readFileSync(USERS_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (err) {
+    return [];
+  }
+}
+
+function saveUsers(users) {
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
+}
+
+// === Archivo de quizzes ===
+const QUIZZES_FILE = path.join(__dirname, 'quizzes.json');
+function loadQuizzes() {
+  try {
+    const data = fs.readFileSync(QUIZZES_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (err) {
+    return [];
+  }
+}
+
+function saveQuizzes(quizzes) {
+  fs.writeFileSync(QUIZZES_FILE, JSON.stringify(quizzes, null, 2), 'utf8');
+}
+
+  function deleteQuiz(user, quizTitle) {
+    const quizzes = loadQuizzes();
+    const initialLength = quizzes.length;
+    const filteredQuizzes = quizzes.filter(q => !(q.user === user && q.title === quizTitle));
+  
+    if (filteredQuizzes.length === initialLength) {
+      return false; // No quiz was deleted
+    }
+  
+    saveQuizzes(filteredQuizzes);
+    return true;
+  }
+
+function appendQuiz(entry) {
+  const arr = loadQuizzes();
+  arr.push(entry);
+  saveQuizzes(arr);
+}
+
+// === Obtener IP local ===
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
   for (const name of Object.keys(interfaces)) {
@@ -16,8 +67,6 @@ function getLocalIP() {
 }
 
 const localIP = getLocalIP();
-
-// === Servidor HTTP + WebSocket ===
 const server = http.createServer();
 const wss = new WebSocket.Server({ server });
 
@@ -89,25 +138,27 @@ function showQuestionResults(pin) {
         type: 'GAME_END',
         payload: { finalScores: rankings }
       });
-      console.log(`🏁 Juego ${pin} terminado`);
     } else {
       const question = game.quiz.questions[game.currentQuestion];
-      game.questionStartTime = Date.now();
       game.answers[game.currentQuestion] = {};
+      // Normalize question before sending to clients (handle legacy 'text' field)
+      const questionToSend = {
+        question: question.question || question.text || question.prompt || '',
+        options: Array.isArray(question.options) ? question.options : [],
+        timeLimit: question.timeLimit || 20,
+        correctAnswer: typeof question.correctAnswer === 'number' ? question.correctAnswer : null
+      };
+      console.log('📤 Enviando siguiente pregunta (normalizada):', questionToSend);
       broadcastToGame(pin, {
         type: 'QUESTION_START',
         payload: {
-          question: {
-            text: question.question,
-            options: question.options,
-            timeLimit: question.timeLimit || 20
-          },
+          question: questionToSend,
           questionIndex: game.currentQuestion,
           total: game.quiz.questions.length
         }
       });
     }
-  }, 8000);
+  }, 5000);
 }
 
 wss.on('connection', (ws) => {
@@ -118,6 +169,137 @@ wss.on('connection', (ws) => {
       const message = JSON.parse(data);
 
       switch (message.type) {
+
+        // 📌 REGISTRO DE USUARIO
+        case 'REGISTER_USER': {
+          const { username, email, password } = message.payload;
+          const users = loadUsers();
+
+          if (users.find(u => u.username === username)) {
+            ws.send(JSON.stringify({
+              type: 'AUTH_ERROR',
+              payload: { message: 'El usuario ya existe' }
+            }));
+            break;
+          }
+
+          const newUser = { username, email, password, quizzes: [] };
+          users.push(newUser);
+          saveUsers(users);
+
+          ws.send(JSON.stringify({
+            type: 'REGISTER_SUCCESS',
+            payload: { username, email }
+          }));
+          console.log(`🟢 Usuario registrado: ${username}`);
+          break;
+        }
+
+        // 📌 LOGIN DE USUARIO
+        case 'LOGIN_USER': {
+          const { username, password } = message.payload;
+          const users = loadUsers();
+          const user = users.find(u => u.username === username && u.password === password);
+
+          if (user) {
+            // Ensure we return the quizzes stored in quizzes.json (single source of truth)
+            const allQuizzes = loadQuizzes();
+            const userQuizzes = allQuizzes.filter(q => q.user === user.username);
+
+            ws.send(JSON.stringify({
+              type: 'LOGIN_SUCCESS',
+              payload: { username: user.username, email: user.email, quizzes: userQuizzes }
+            }));
+            console.log(`✅ Usuario autenticado: ${username}`);
+          } else {
+            ws.send(JSON.stringify({
+              type: 'AUTH_ERROR',
+              payload: { message: 'Usuario o contraseña incorrectos' }
+            }));
+          }
+          break;
+        }
+
+        // 💾 GUARDAR QUIZ EN server/quizzes.json
+        case 'SAVE_QUIZ': {
+          try {
+            const { user, quiz } = message.payload || {};
+            if (!quiz || !quiz.title || !Array.isArray(quiz.questions)) {
+              ws.send(JSON.stringify({ type: 'SAVE_QUIZ_ERROR', payload: { message: 'Payload inválido' } }));
+              break;
+            }
+
+            const entry = {
+              id: Date.now(),
+              user: user || 'anonymous',
+              title: quiz.title,
+              questions: quiz.questions,
+              createdAt: new Date().toISOString()
+            };
+
+            appendQuiz(entry);
+
+            ws.send(JSON.stringify({ type: 'SAVE_QUIZ_SUCCESS', payload: { entry } }));
+            console.log(`💾 Quiz guardado: ${entry.title} (por ${entry.user})`);
+          } catch (err) {
+            console.error('Error guardando quiz:', err);
+            ws.send(JSON.stringify({ type: 'SAVE_QUIZ_ERROR', payload: { message: 'Error interno al guardar' } }));
+          }
+          break;
+        }
+
+        // 📥 OBTENER QUIZZES (por usuario o todos si no se especifica)
+        case 'GET_QUIZZES': {
+          try {
+            const { user } = message.payload || {};
+            const all = loadQuizzes();
+            const quizzes = user ? all.filter(q => q.user === user) : all;
+            ws.send(JSON.stringify({ type: 'GET_QUIZZES_SUCCESS', payload: { quizzes } }));
+          } catch (err) {
+            console.error('Error leyendo quizzes:', err);
+            ws.send(JSON.stringify({ type: 'GET_QUIZZES_ERROR', payload: { message: 'Error interno' } }));
+          }
+          break;
+        }
+
+          // 🗑️ ELIMINAR QUIZ
+          case 'DELETE_QUIZ': {
+            try {
+              const { user, quizTitle } = message.payload;
+            
+              if (!user || !quizTitle) {
+                ws.send(JSON.stringify({
+                  type: 'DELETE_QUIZ_ERROR',
+                  payload: { message: 'Usuario o título del quiz no proporcionados' }
+                }));
+                break;
+              }
+
+              const deleted = deleteQuiz(user, quizTitle);
+
+              if (deleted) {
+                ws.send(JSON.stringify({
+                  type: 'DELETE_QUIZ_SUCCESS',
+                  payload: { message: 'Quiz eliminado correctamente' }
+                }));
+                console.log(`🗑️ Quiz eliminado: ${quizTitle} (de ${user})`);
+              } else {
+                ws.send(JSON.stringify({
+                  type: 'DELETE_QUIZ_ERROR',
+                  payload: { message: 'Quiz no encontrado' }
+                }));
+              }
+            } catch (err) {
+              console.error('Error eliminando quiz:', err);
+              ws.send(JSON.stringify({
+                type: 'DELETE_QUIZ_ERROR',
+                payload: { message: 'Error interno al eliminar el quiz' }
+              }));
+            }
+            break;
+          }
+
+        // 🎮 CREAR JUEGO
         case 'CREATE_GAME': {
           const pin = generatePin();
           games.set(pin, {
@@ -132,19 +314,15 @@ wss.on('connection', (ws) => {
             questionTimer: null
           });
           ws.send(JSON.stringify({ type: 'GAME_CREATED', payload: { pin } }));
-          console.log(`🎮 Juego creado con PIN: ${pin}`);
           break;
         }
 
+        // 🧍 UNIRSE AL JUEGO
         case 'JOIN_GAME': {
           const { pin, username } = message.payload;
           const game = games.get(pin);
           if (!game) {
             ws.send(JSON.stringify({ type: 'ERROR', payload: { message: 'Juego no encontrado' } }));
-            break;
-          }
-          if (game.state !== 'LOBBY') {
-            ws.send(JSON.stringify({ type: 'ERROR', payload: { message: 'El juego ya ha comenzado' } }));
             break;
           }
           if (game.clients.some(c => c.username === username)) {
@@ -156,10 +334,10 @@ wss.on('connection', (ws) => {
           ws.send(JSON.stringify({ type: 'JOIN_SUCCESS', payload: { pin, username } }));
           const players = game.clients.filter(c => !c.isHost).map(c => c.username);
           broadcastToGame(pin, { type: 'PLAYER_JOINED', payload: { players } });
-          console.log(`👤 ${username} se unió al juego ${pin}`);
           break;
         }
 
+        // ▶️ INICIAR JUEGO
         case 'START_GAME': {
           const { pin } = message.payload;
           const game = games.get(pin);
@@ -168,70 +346,84 @@ wss.on('connection', (ws) => {
           game.currentQuestion = 0;
           game.answers[0] = {};
           const q = game.quiz.questions[0];
+          // Normalize question shape so clients always receive a `question` field
+          const questionToSend = {
+            question: q.question || q.text || q.prompt || '',
+            options: Array.isArray(q.options) ? q.options : [],
+            timeLimit: q.timeLimit || 20,
+            correctAnswer: typeof q.correctAnswer === 'number' ? q.correctAnswer : null
+          };
+          console.log('📤 Enviando pregunta inicial (normalizada):', questionToSend);  // Log para debug
           broadcastToGame(pin, {
             type: 'GAME_STARTED',
             payload: {
-              question: { text: q.question, options: q.options, timeLimit: q.timeLimit || 20 },
+              question: questionToSend,
               questionIndex: 0,
               total: game.quiz.questions.length
             }
           });
-          game.questionTimer = setTimeout(() => showQuestionResults(pin), (q.timeLimit || 20) * 1000 + 500);
-          console.log(`▶️ Juego ${pin} iniciado`);
           break;
         }
 
+        // 📝 RECIBIR RESPUESTA
         case 'SUBMIT_ANSWER': {
           const { pin, questionIndex, answer, timeMs } = message.payload;
           const game = games.get(pin);
-          if (!game) return;
-          const client = game.clients.find(c => c.ws === ws);
-          if (!client || client.isHost) return;
-          if (game.answers[questionIndex]?.[client.username]) return;
+          if (!game) break;
 
-          const q = game.quiz.questions[questionIndex];
-          const isCorrect = answer === q.correctAnswer;
-          let points = 0;
-          if (isCorrect) {
-            const maxTime = (q.timeLimit || 20) * 1000;
-            const speedBonus = Math.floor(500 * (1 - timeMs / maxTime));
-            points = 1000 + Math.max(0, speedBonus);
-          }
-          game.scores[client.username] = (game.scores[client.username] || 0) + points;
+          // Encontrar el username del jugador que responde
+          const client = game.clients.find(c => c.ws === ws && !c.isHost);
+          if (!client) break;
+
+          // Si ya respondió, ignorar
+          if (game.answers[questionIndex]?.[client.username]) break;
+
+          // Guardar la respuesta
           if (!game.answers[questionIndex]) game.answers[questionIndex] = {};
-          game.answers[questionIndex][client.username] = { answer, isCorrect, points, timeMs };
-          game.host.send(JSON.stringify({ type: 'ANSWER_RECEIVED', payload: { username: client.username } }));
+          game.answers[questionIndex][client.username] = {
+            answer,
+            timeMs
+          };
+
+          // Calcular puntos si es correcta
+          const correctAnswer = game.quiz.questions[questionIndex].correctAnswer;
+          const isCorrect = answer === correctAnswer;
+          const timePoints = Math.max(0, Math.floor((20000 - timeMs) / 1000)); // max 20 puntos por velocidad
+          const points = isCorrect ? (1000 + timePoints) : 0;
+          game.scores[client.username] = (game.scores[client.username] || 0) + points;
+
+          // Notificar a todos que este jugador respondió
+          broadcastToGame(pin, {
+            type: 'ANSWER_RECEIVED',
+            payload: {
+              username: client.username,
+              questionIndex
+            }
+          });
+
+          // Si todos respondieron, mostrar resultados
           if (checkAllAnswered(game)) {
-            if (game.questionTimer) clearTimeout(game.questionTimer);
-            setTimeout(() => showQuestionResults(pin), 1000);
+            showQuestionResults(pin);
           }
           break;
         }
 
-        case 'NEXT_QUESTION':
-          showQuestionResults(message.payload.pin);
+        // ⏭️ SIGUIENTE PREGUNTA
+        case 'NEXT_QUESTION': {
+          const { pin } = message.payload;
+          const game = games.get(pin);
+          if (!game || game.host !== ws) break;
+          showQuestionResults(pin);
           break;
-        case 'END_GAME':
-          games.delete(message.payload.pin);
-          break;
+        }
       }
     } catch (e) {
       console.error('❌ Error procesando mensaje:', e);
-      ws.send(JSON.stringify({ type: 'ERROR', payload: { message: 'Error del servidor' } }));
     }
   });
-
-  ws.on('close', () => console.log('✗ Cliente desconectado'));
 });
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log('');
-  console.log('🚀 ════════════════════════════════════════');
-  console.log('   SERVIDOR KAHOOT INICIADO');
-  console.log('🚀 ════════════════════════════════════════');
-  console.log(`   📡 WebSocket: ws://${localIP}:${PORT}`);
-  console.log(`   🌐 Abre el cliente en: http://${localIP}:5173`);
-  console.log('════════════════════════════════════════');
-  console.log('');
+  console.log(`🚀 Servidor WebSocket corriendo en ws://${localIP}:${PORT}`);
 });

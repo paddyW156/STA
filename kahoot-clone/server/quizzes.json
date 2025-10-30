@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1761822611041,
+    "user": "ariana",
+    "title": "Capitales",
+    "questions": [
+      {
+        "question": "¿Cuál es la capital del mundo?",
+        "options": [
+          "Bilbao",
+          "Madrid",
+          "Berlin",
+          "Viena"
+        ],
+        "correctAnswer": 0,
+        "timeLimit": 20
+      },
+      {
+        "question": "¿Dónde nació la reina del mundo?",
+        "options": [
+          "San Sebastián ",
+          "Bilbao",
+          "Londres",
+          "NY"
+        ],
+        "correctAnswer": 1,
+        "timeLimit": 20
+      }
+    ],
+    "createdAt": "2025-10-30T11:10:11.041Z"
+  }
+]

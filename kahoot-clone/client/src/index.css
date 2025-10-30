@@ -1,3 +1,8 @@
+/* Import theme and component styles (kept separate so you can override quickly) */
+@import "./styles/variables.css";
+@import "./styles/App.css";
+@import "./styles/components.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

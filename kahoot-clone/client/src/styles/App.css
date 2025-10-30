@@ -1,0 +1,297 @@
+/* Reset & base */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+/* App stage */
+.app {
+  min-height: 100vh;
+  background: radial-gradient(1200px 400px at 10% 10%, rgba(124,58,237,0.06), transparent),
+              radial-gradient(900px 300px at 90% 90%, rgba(0,229,255,0.04), transparent),
+              linear-gradient(180deg, var(--bg) 0%, var(--bg-alt) 100%);
+  color: var(--text);
+  padding: 30px 18px;
+}
+
+.game-stage { min-height: calc(100vh - 40px); display:flex; align-items:center; justify-content:center; padding: 40px 18px; }
+
+.container { max-width: var(--max-width); margin: 0 auto; padding: 24px; }
+
+/* Cards & glass */
+.card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-1);
+  border: 1px solid var(--glass-border);
+}
+
+/* Topbar / header */
+.topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; }
+.logo { font-weight:900; font-size:1.4rem; color:var(--primary); letter-spacing:0.6px; text-shadow: 0 6px 28px rgba(0,229,255,0.06); }
+
+/* Inputs */
+input[type="text"], input[type="number"], input[type="email"], textarea, select {
+  width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); background: var(--input-bg); color: var(--text);
+}
+
+.muted { color: var(--muted); }
+
+/* Buttons */
+.btn { border-radius: 12px; padding: 12px 16px; font-weight:700; letter-spacing:0.6px; border:none; cursor:pointer; }
+.btn-primary { background: var(--neon-gradient); color: #041025; box-shadow: 0 8px 32px rgba(124,58,237,0.08), 0 0 20px rgba(0,229,255,0.06); transition: transform 160ms ease, box-shadow 160ms ease; }
+.btn-primary:hover { transform: translateY(-3px); box-shadow: 0 18px 50px rgba(124,58,237,0.12), 0 0 30px rgba(0,229,255,0.12); }
+.btn-ghost { border: 1px solid rgba(255,255,255,0.06); color: var(--text); background: transparent; padding:10px 12px; }
+
+/* Navigation buttons shown on question results */
+.btn-next, .btn-finish {
+  border-radius: 14px;
+  padding: 12px 18px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  border: none;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.btn-next {
+  background: var(--neon-gradient);
+  color: #041025;
+  box-shadow: var(--glow-primary);
+}
+
+/* Make the final/results button a bit larger and more prominent */
+.btn-finish {
+  padding: 18px 28px;
+  font-size: 1.15rem;
+  background: var(--success);
+  color: #041025;
+  box-shadow: var(--glow-success);
+}
+
+/* Utilities */
+.center { display:flex; align-items:center; justify-content:center; }
+.gap-12 { gap:12px; }
+.mb-12 { margin-bottom:12px; }
+
+/* Dashboard layouts */
+.dashboard-container {
+  min-height: calc(100vh - 40px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 18px;
+}
+
+.dashboard-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius: var(--radius);
+  padding: 32px;
+  box-shadow: var(--shadow-1);
+  border: 1px solid var(--glass-border);
+  width: 100%;
+  max-width: 800px;
+}
+
+/* Lobby styles */
+.lobby-heading {
+  color: var(--text);
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 2rem;
+  text-shadow: var(--text-glow);
+}
+
+.lobby-pin {
+  font-size: 3rem;
+  font-weight: bold;
+  color: var(--text);
+  text-align: center;
+  padding: 1rem;
+  margin: 1rem 0;
+  background: var(--glass-bg);
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glow-sm);
+  backdrop-filter: blur(5px);
+}
+
+.lobby-players-section {
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.lobby-players-title {
+  color: var(--text);
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  text-shadow: var(--text-glow);
+}
+
+.lobby-players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Question styles */
+.question-text {
+  color: white;
+  font-size: 2rem;
+  margin: 2rem 0;
+  text-align: center;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius);
+  border: 2px solid white;
+  backdrop-filter: blur(5px);
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.question-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+  padding: 0 20px;
+}
+
+.option-btn {
+  padding: 20px;
+  font-size: 1.1rem;
+  border: 2px solid white;
+  border-radius: var(--radius);
+  background: var(--glass-bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  text-align: center;
+  backdrop-filter: blur(5px);
+}
+
+.option-btn:hover:not(:disabled) {
+  background: var(--glass-bg-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--glow-sm);
+  border-color: white;
+}
+
+.option-btn.selected {
+  border-color: var(--primary);
+  background: var(--glass-bg-selected);
+  box-shadow: var(--glow-primary);
+}
+
+.option-btn.correct {
+  border-color: var(--success);
+  background: var(--glass-bg-success);
+  box-shadow: var(--glow-success);
+}
+
+.option-btn.incorrect {
+  border-color: var(--error);
+  background: var(--glass-bg-error);
+  box-shadow: var(--glow-error);
+}
+
+/* Shared styles for badges and cards */
+.player-badge {
+  background: var(--glass-bg);
+  border: 2px solid white;
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  color: var(--text);
+  text-align: center;
+  font-size: 1.1rem;
+  backdrop-filter: blur(5px);
+  transition: all 0.3s ease;
+}
+
+.player-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow-sm);
+  border-color: white;
+}
+
+/* Question status and feedback */
+.question-status {
+  color: var(--text);
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.question-header {
+  color: var(--text);
+  margin-bottom: 1rem;
+  text-shadow: var(--text-glow);
+}
+
+.question-timer {
+  color: var(--text);
+  font-size: 1.2rem;
+}
+
+.answer-feedback {
+  margin-top: 1rem;
+  text-align: center;
+  color: var(--text);
+}
+
+.feedback {
+  font-size: 1.2rem;
+  margin: 1rem 0;
+}
+
+.feedback.correct {
+  color: var(--success);
+}
+
+.feedback.incorrect {
+  color: var(--error);
+}
+
+.waiting-next {
+  margin-top: 2rem;
+  text-align: center;
+  color: var(--text);
+}
+
+/* Scrollbar styling */
+.lobby-players-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.lobby-players-grid::-webkit-scrollbar-track {
+  background: var(--glass-bg);
+  border-radius: 4px;
+}
+
+.lobby-players-grid::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 4px;
+}
+
+.lobby-players-grid::-webkit-scrollbar-thumb:hover {
+  background: var(--glass-bg-hover);
+}
+
+/* Question card container */
+.question-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius: var(--radius);
+  padding: 32px 16px;
+  box-shadow: var(--shadow-1);
+  border: 1px solid var(--glass-border);
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}

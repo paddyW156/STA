@@ -1,0 +1,49 @@
+/* Theme variables for a neon / game-like look */
+:root {
+  --bg: #0b1020; /* deep night */
+  --bg-alt: #081022;
+  --card: rgba(255,255,255,0.04);
+  --glass: rgba(255,255,255,0.04);
+  --primary: #00e5ff; /* cyan neon */
+  --accent: #7c3aed; /* purple neon */
+  --accent-2: #ff4d6d; /* hot pink */
+  --text: #e6f3ff; /* light text */
+  --muted: #9aa6bf;
+  --success: #16e39a;
+  --danger: #ff6b6b;
+  --input-bg: rgba(255,255,255,0.02);
+  --radius: 16px;
+  --shadow-1: 0 18px 60px rgba(8,10,20,0.7);
+  --glow: 0 12px 40px rgba(0,229,255,0.18);
+  --neon-gradient: linear-gradient(90deg, var(--primary), var(--accent), var(--accent-2));
+  --glass-border: rgba(255,255,255,0.08);
+  --max-width: 1100px;
+  --font-sans: 'Poppins', 'Orbitron', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Glass effects */
+  --glass-bg: rgba(255,255,255,0.05);
+  --glass-bg-hover: rgba(255,255,255,0.08);
+  --glass-bg-selected: rgba(0,229,255,0.1);
+  --glass-bg-success: rgba(22,227,154,0.1);
+  --glass-bg-error: rgba(255,107,107,0.1);
+  
+  /* Glows and shadows */
+  --text-glow: 0 0 10px rgba(255,255,255,0.3);
+  --glow-sm: 0 0 15px rgba(255,255,255,0.2);
+  --glow-primary: 0 0 20px rgba(0,229,255,0.3);
+  --glow-success: 0 0 20px rgba(22,227,154,0.3);
+  --glow-error: 0 0 20px rgba(255,107,107,0.3);
+  
+  /* Border radius variants */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+}
+
+/* Responsive typography tuned for game UI */
+html { font-size: 16px; }
+@media (max-width: 900px) { html { font-size: 15px; } }
+@media (max-width: 480px) { html { font-size: 14px; } }
+
+/* Import a bold display-like fallback if available (optional) */
+/* You can add a Google Fonts link to index.html for Poppins or use a local font */
