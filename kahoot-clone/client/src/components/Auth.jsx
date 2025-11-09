@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useWebSocket } from './WebSocketProvider';
-//import '../styles/Auth.css';
+import { GoogleLogin } from '@react-oauth/google';
+
+import '../styles/App.css';
 
 export default function Auth({ onLogin, onBack}) {
   const [isLogin, setIsLogin] = useState(true);
@@ -58,6 +60,25 @@ export default function Auth({ onLogin, onBack}) {
     console.log('[Auth] Petición enviada, esperando respuesta...');
   };
 
+  //Manejo de login con Google
+  const handleGoogleLoginSuccess = (credentialResponse) => {
+    console.log('[Auth] Google login exitoso:', credentialResponse);
+    if (!connected) {
+      alert('Conexión no establecida. Intenta de nuevo.');
+      return;
+    }
+    // El servidor espera `idToken` en el payload (ver server/server.js)
+    send({
+      type: 'LOGIN_GOOGLE',
+      payload: { idToken: credentialResponse.credential }
+    });
+  };
+
+  const handleGoogleLoginError = () => {
+    console.error('[Auth] Error en login con Google');
+    alert('Error en login con Google. Intenta de nuevo.');
+  };
+
   return (
     <div className="auth-container">
       <div className="auth-card">
@@ -89,6 +110,16 @@ export default function Auth({ onLogin, onBack}) {
 
           <button type="submit" className="btn btn-auth">{isLogin ? 'Entrar' : 'Crear Cuenta'}</button>
         </form>
+
+        <div className="auth-social-login">
+          <p className="auth-social-text">o continúa con</p>
+          <div className="auth-social-buttons">
+            <GoogleLogin
+              onSuccess={handleGoogleLoginSuccess}
+              onError={handleGoogleLoginError}
+            />
+          </div>
+        </div>
 
         <div className="auth-toggle">
           <span>{isLogin ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}</span>

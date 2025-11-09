@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useWebSocket } from './WebSocketProvider';
-//import '../styles/QuizCreator.css';
+import '../styles/QuizCreator.css';
 
 export default function QuizCreator({ user, onFinish, onBack }) {
   const [quizTitle, setQuizTitle] = useState('');
@@ -186,15 +186,24 @@ export default function QuizCreator({ user, onFinish, onBack }) {
             </h3>
             {questions.map((q, i) => (
               <div key={i} className="question-item">
-                <span className="question-number">{i + 1}.</span>
-                <span className="question-text">{q.question}</span>
-                <button
-                  onClick={() => removeQuestion(i)}
-                  className="btn-remove"
-                  title="Eliminar pregunta"
-                >
-                  ×
-                </button>
+                <div className="question-item-content">
+                  <span className="question-number">{i + 1}.</span>
+                  <span className="question-preview">{q.question}</span>
+                  <button
+                    onClick={() => removeQuestion(i)}
+                    className="btn-remove"
+                    title="Eliminar pregunta"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="question-item-options">
+                  {q.options.map((opt, index) => (
+                    <span key={index} className={`option-preview ${index === q.correctAnswer ? 'correct' : ''}`}>
+                      {opt}
+                    </span>
+                  ))}
+                </div>
               </div>
             ))}
           </div>

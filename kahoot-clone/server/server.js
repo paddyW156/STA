@@ -3,6 +3,7 @@ const http = require('http');
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
+const { OAuth2Client } = require('google-auth-library');
 
 // === Archivo de usuarios ===
 const USERS_FILE = path.join(__dirname, 'users.json');
@@ -217,6 +218,49 @@ wss.on('connection', (ws) => {
               payload: { message: 'Usuario o contraseña incorrectos' }
             }));
           }
+          break;
+        }
+
+        case 'LOGIN_GOOGLE': {
+          const { idToken } = message.payload || {};
+          const CLIENT_ID = '684430860571-th5lonrur7rotvr8tr4b52av00qtjigh.apps.googleusercontent.com';
+          const client = new OAuth2Client(CLIENT_ID);
+
+          // Ejecutar verificación de token en IIFE async con try/catch para manejar errores
+          (async () => {
+            try {
+              if (!idToken) throw new Error('No idToken provided');
+              const ticket = await client.verifyIdToken({
+                idToken,
+                audience: CLIENT_ID
+              });
+              const payload = ticket.getPayload();
+              const { email, name, sub } = payload || {};
+
+              const users = loadUsers();
+              let user = users.find(u => u.username === email);
+
+              if (!user) {
+                user = { username: email, email, password: sub, quizzes: [] };
+                users.push(user);
+                saveUsers(users);
+                console.log(`🟢 Usuario registrado via Google: ${email}`);
+              }
+              const allQuizzes = loadQuizzes();
+              const userQuizzes = allQuizzes.filter(q => q.user === user.username);
+              ws.send(JSON.stringify({
+                type: 'LOGIN_SUCCESS',
+                payload: { username: user.username, email: user.email, quizzes: userQuizzes }
+              }));
+              console.log(`✅ Usuario autenticado via Google: ${email}`);
+            } catch (err) {
+              console.error('Error verificando token de Google:', err);
+              ws.send(JSON.stringify({
+                type: 'AUTH_ERROR',
+                payload: { message: 'Error autenticando con Google' }
+              }));
+            }
+          })();
           break;
         }
 

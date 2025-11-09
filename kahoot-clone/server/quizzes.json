@@ -28,5 +28,35 @@
       }
     ],
     "createdAt": "2025-10-30T11:10:11.041Z"
+  },
+  {
+    "id": 1762687544041,
+    "user": "arianamolro@gmail.com",
+    "title": "Prueba2",
+    "questions": [
+      {
+        "question": "Que tal 2",
+        "options": [
+          "Bien",
+          "muy bien",
+          "mal",
+          "fatal"
+        ],
+        "correctAnswer": 0,
+        "timeLimit": 20
+      },
+      {
+        "question": "vafd",
+        "options": [
+          "afdsfd",
+          "asdf",
+          "sadas",
+          "d"
+        ],
+        "correctAnswer": 0,
+        "timeLimit": 20
+      }
+    ],
+    "createdAt": "2025-11-09T11:25:44.041Z"
   }
 ]
