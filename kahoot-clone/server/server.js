@@ -1,26 +1,30 @@
-const WebSocket = require('ws');
-const http = require('http');
-const os = require('os');
-const fs = require('fs');
-const path = require('path');
-const { OAuth2Client } = require('google-auth-library');
+const WebSocket = require('ws'); //Importamos librería WebSocket que crea un servidor WebSocketen Node.js
+const http = require('http'); //Módulo nativo de Nose.js para crear servidores HTTP
+//Se requiere porque muchos servidores necesitan montarse encima de un servidor HTTP
+const os = require('os'); //módulo nativo para obtener información del sistema operativo
+const fs = require('fs'); //para leer y escribir archivos
+const path = require('path'); //Módulo para manejar rutas de archivos
+const { OAuth2Client } = require('google-auth-library'); //Para autenticación con Google
 
 // === Archivo de usuarios ===
-const USERS_FILE = path.join(__dirname, 'users.json');
+const USERS_FILE = path.join(__dirname, 'users.json'); //Ruta al archivo de usuarios
 function loadUsers() {
   try {
-    const data = fs.readFileSync(USERS_FILE, 'utf8');
-    return JSON.parse(data);
+    const data = fs.readFileSync(USERS_FILE, 'utf8'); //Leemos el archivo
+    //Leemos el archivo de manera síncrona porque es pequeño y solo necesitamos cargarlo en momentos concretos
+    return JSON.parse(data); //Parseamos el JSON y lo retornamos
   } catch (err) {
-    return [];
+    return [];//Si hay error (archivo no existe), retornamos array vacío
   }
 }
 
 function saveUsers(users) {
   fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
+  //Guardamos usuarios en JSON, con indentación de 2 espacios para legibilidad
 }
 
 // === Archivo de quizzes ===
+//Igual que con usuarios, pero para quizzes
 const QUIZZES_FILE = path.join(__dirname, 'quizzes.json');
 function loadQuizzes() {
   try {
@@ -38,19 +42,21 @@ function saveQuizzes(quizzes) {
   function deleteQuiz(user, quizTitle) {
     const quizzes = loadQuizzes();
     const initialLength = quizzes.length;
+    //FIltramos por usuarios y título para eliminar el quiz específico
+    //Guardamos los que no contienen ese usuario y título
     const filteredQuizzes = quizzes.filter(q => !(q.user === user && q.title === quizTitle));
   
     if (filteredQuizzes.length === initialLength) {
-      return false; // No quiz was deleted
+      return false; // No se ha borrado nungún quiz
     }
   
     saveQuizzes(filteredQuizzes);
-    return true;
+    return true; // Quiz eliminado exitosamente
   }
 
 function appendQuiz(entry) {
   const arr = loadQuizzes();
-  arr.push(entry);
+  arr.push(entry); //Mete el nuevo quiz al final del array
   saveQuizzes(arr);
 }
 
@@ -61,39 +67,48 @@ function getLocalIP() {
     for (const iface of interfaces[name]) {
       if (iface.family === 'IPv4' && !iface.internal) {
         return iface.address;
+        //Recorremos cada interfaz de red y retornamos la primera IP IPv4 que no sea interna (localhost)
       }
     }
   }
-  return 'localhost';
+  return 'localhost'; //Si no hay ninguna, localhost por defecto
 }
 
 const localIP = getLocalIP();
-const server = http.createServer();
-const wss = new WebSocket.Server({ server });
+const server = http.createServer(); //Crea un HTTP vacío, como base
+const wss = new WebSocket.Server({ server });//Creamos servidor webSocket anclado al servidor HTTP
+//Ambos compartirán el mismo puerto
 
+// === Lógica del juego ===
 const games = new Map();
 
 function generatePin() {
+  //Genera un PIN de 6 dígitos aleatorio(entre 100000 y 999999)
+  //Y lo convierte a string
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 function broadcastToGame(pin, message, excludeWs = null) {
+  //Enviamos un mensaje a todos los clientes en el juego con el PIN dado
   const game = games.get(pin);
   if (!game) return;
   game.clients.forEach(client => {
+    //client.ws es la conexión WebSocket del cliente, literalmente el canal por el que hablamos con él
     if (client.ws !== excludeWs && client.ws.readyState === WebSocket.OPEN) {
+      //Enviamos el mensaje serializado como JSON
       client.ws.send(JSON.stringify(message));
     }
   });
 }
 
 function checkAllAnswered(game) {
-  const playerCount = game.clients.filter(c => !c.isHost).length;
+  const playerCount = game.clients.filter(c => !c.isHost).length; //Todos excepto el host
   const answeredCount = Object.keys(game.answers[game.currentQuestion] || {}).length;
-  return playerCount > 0 && answeredCount === playerCount;
+  return playerCount > 0 && answeredCount === playerCount; //Devolvemos true si todos respondieron
 }
 
 function calculateAnswerStats(game) {
+  //Calcula estadísticas de respuestas para la pregunta actual
   const answers = game.answers[game.currentQuestion] || {};
   const stats = [0, 0, 0, 0];
   Object.values(answers).forEach(a => stats[a.answer]++);
@@ -101,19 +116,22 @@ function calculateAnswerStats(game) {
 }
 
 function showQuestionResults(pin) {
+  //Muestra los resultados de la pregunta actual y avanza a la siguiente
   const game = games.get(pin);
   if (!game) return;
 
-  const prevQuestion = game.quiz.questions[game.currentQuestion];
-  const answerStats = calculateAnswerStats(game);
+  const prevQuestion = game.quiz.questions[game.currentQuestion]; //pregunta recien respondida
+  const answerStats = calculateAnswerStats(game);//estadísticas de respuestas
 
   const pointsThisQuestion = {};
-  const answers = game.answers[game.currentQuestion] || {};
+  const answers = game.answers[game.currentQuestion] || {}; //{ "juan": {answer:1, points: 900}, "ana": {answer:3, points:0} }
   game.clients.filter(c => !c.isHost).forEach(client => {
     const answer = answers[client.username];
     pointsThisQuestion[client.username] = answer ? answer.points : 0;
+    //Si respondió, suma puntos, sino 0
   });
 
+  // Enviamos resultados a todos los jugadores
   broadcastToGame(pin, {
     type: 'QUESTION_END',
     payload: {
@@ -124,48 +142,65 @@ function showQuestionResults(pin) {
     }
   });
 
-  setTimeout(() => {
-    game.currentQuestion++;
-    if (game.currentQuestion >= game.quiz.questions.length) {
-      game.state = 'FINISHED';
-      const rankings = Object.entries(game.scores)
-        .sort(([, a], [, b]) => b - a)
-        .map(([username, score], i) => ({
-          rank: i + 1,
-          username,
-          score
-        }));
-      broadcastToGame(pin, {
-        type: 'GAME_END',
-        payload: { finalScores: rankings }
-      });
-    } else {
-      const question = game.quiz.questions[game.currentQuestion];
-      game.answers[game.currentQuestion] = {};
-      // Normalize question before sending to clients (handle legacy 'text' field)
-      const questionToSend = {
-        question: question.question || question.text || question.prompt || '',
-        options: Array.isArray(question.options) ? question.options : [],
-        timeLimit: question.timeLimit || 20,
-        correctAnswer: typeof question.correctAnswer === 'number' ? question.correctAnswer : null
-      };
-      console.log('📤 Enviando siguiente pregunta (normalizada):', questionToSend);
-      broadcastToGame(pin, {
-        type: 'QUESTION_START',
-        payload: {
-          question: questionToSend,
-          questionIndex: game.currentQuestion,
-          total: game.quiz.questions.length
-        }
-      });
-    }
-  }, 5000);
+  
+  //Queremos que una vez vistos los resultados el host pueda avanzar a la siguiente pregunta
+  //o bien se inicie solo tras un delay de 15s
+  game.nextQuestionTimeout = setTimeout(() => advanceQuestion(pin), 15000);
 }
 
-wss.on('connection', (ws) => {
+//Avanzamos siguiente pantalla
+function advanceQuestion(pin) {
+  const game = games.get(pin);
+  if (!game) return;
+
+    // Limpiamos el timeout para evitar doble ejecución
+  if (game.nextQuestionTimeout) {
+    clearTimeout(game.nextQuestionTimeout);
+    game.nextQuestionTimeout = null;
+  }
+
+
+  game.currentQuestion++;
+  if (game.currentQuestion >= game.quiz.questions.length) {
+    game.state = 'FINISHED';
+    const rankings = Object.entries(game.scores)
+      .sort(([, a], [, b]) => b - a)
+      .map(([username, score], i) => ({
+        rank: i + 1,
+        username,
+        score
+      }));
+    broadcastToGame(pin, {
+      type: 'GAME_END',
+      payload: { finalScores: rankings }
+    });
+  } else {
+    const question = game.quiz.questions[game.currentQuestion];
+    game.answers[game.currentQuestion] = {};
+    const questionToSend = {
+      question: question.question || question.text || question.prompt || '',
+      options: Array.isArray(question.options) ? question.options : [],
+      timeLimit: question.timeLimit || 20,
+      correctAnswer: typeof question.correctAnswer === 'number' ? question.correctAnswer : null
+    };
+    console.log('📤 Enviando siguiente pregunta (normalizada):', questionToSend);
+    broadcastToGame(pin, {
+      type: 'QUESTION_START',
+      payload: {
+        question: questionToSend,
+        questionIndex: game.currentQuestion,
+        total: game.quiz.questions.length
+      }
+    });
+  }
+}
+
+wss.on('connection', (ws) => { //Cuando un cliente se conecta, se ejecuta esta función
+  //ws es el objeto que representa la conexión WebSocket con ese cliente
   console.log('✓ Nueva conexión WebSocket');
 
-  ws.on('message', (data) => {
+  //Cada cliente tiene su propio ws, por lo que podemos manejar múltiples conexiones simultáneas
+  ws.on('message', (data) => { //Recibe mensaje de ese cliente
     try {
       const message = JSON.parse(data);
 
@@ -174,8 +209,9 @@ wss.on('connection', (ws) => {
         // 📌 REGISTRO DE USUARIO
         case 'REGISTER_USER': {
           const { username, email, password } = message.payload;
-          const users = loadUsers();
+          const users = loadUsers(); //Cargamos usuarios existentes
 
+          // Verificar si el usuario ya existe
           if (users.find(u => u.username === username)) {
             ws.send(JSON.stringify({
               type: 'AUTH_ERROR',
@@ -184,6 +220,7 @@ wss.on('connection', (ws) => {
             break;
           }
 
+          //SI no existe, lo creamos
           const newUser = { username, email, password, quizzes: [] };
           users.push(newUser);
           saveUsers(users);
@@ -203,7 +240,8 @@ wss.on('connection', (ws) => {
           const user = users.find(u => u.username === username && u.password === password);
 
           if (user) {
-            // Ensure we return the quizzes stored in quizzes.json (single source of truth)
+            //Si existe y la contraseña coincide, autenticamos
+            //Cargamos quizzes del usuario
             const allQuizzes = loadQuizzes();
             const userQuizzes = allQuizzes.filter(q => q.user === user.username);
 
@@ -222,18 +260,22 @@ wss.on('connection', (ws) => {
         }
 
         case 'LOGIN_GOOGLE': {
+          // Autenticación con Google
           const { idToken } = message.payload || {};
+          //ID del cliente OAuth 2.0 de Google
           const CLIENT_ID = '684430860571-th5lonrur7rotvr8tr4b52av00qtjigh.apps.googleusercontent.com';
           const client = new OAuth2Client(CLIENT_ID);
 
-          // Ejecutar verificación de token en IIFE async con try/catch para manejar errores
+          //Esto es una función asíncrona porque la verificación del token es una operación asíncrona
           (async () => {
             try {
+              //Aquí con await esperamos a que Google verifique el token
               if (!idToken) throw new Error('No idToken provided');
               const ticket = await client.verifyIdToken({
                 idToken,
                 audience: CLIENT_ID
               });
+              //Si el token es válido, obtenemos la información del usuario
               const payload = ticket.getPayload();
               const { email, name, sub } = payload || {};
 
@@ -241,6 +283,7 @@ wss.on('connection', (ws) => {
               let user = users.find(u => u.username === email);
 
               if (!user) {
+                //Guardamos usurio si no existe
                 user = { username: email, email, password: sub, quizzes: [] };
                 users.push(user);
                 saveUsers(users);
@@ -260,7 +303,25 @@ wss.on('connection', (ws) => {
                 payload: { message: 'Error autenticando con Google' }
               }));
             }
-          })();
+          })(); //La ejecutamos inmediatamente
+          break;
+        }
+
+        // 🎮 CREAR JUEGO
+        case 'CREATE_GAME': {
+          const pin = generatePin();
+          games.set(pin, {
+            pin,
+            quiz: message.payload.quiz,
+            host: ws,
+            clients: [{ ws, username: 'Host', isHost: true }],
+            state: 'LOBBY',
+            currentQuestion: -1,
+            scores: {},
+            answers: {},
+            questionTimer: null
+          });
+          ws.send(JSON.stringify({ type: 'GAME_CREATED', payload: { pin } }));
           break;
         }
 
@@ -342,24 +403,6 @@ wss.on('connection', (ws) => {
             }
             break;
           }
-
-        // 🎮 CREAR JUEGO
-        case 'CREATE_GAME': {
-          const pin = generatePin();
-          games.set(pin, {
-            pin,
-            quiz: message.payload.quiz,
-            host: ws,
-            clients: [{ ws, username: 'Host', isHost: true }],
-            state: 'LOBBY',
-            currentQuestion: -1,
-            scores: {},
-            answers: {},
-            questionTimer: null
-          });
-          ws.send(JSON.stringify({ type: 'GAME_CREATED', payload: { pin } }));
-          break;
-        }
 
         // 🧍 UNIRSE AL JUEGO
         case 'JOIN_GAME': {
@@ -457,7 +500,7 @@ wss.on('connection', (ws) => {
           const { pin } = message.payload;
           const game = games.get(pin);
           if (!game || game.host !== ws) break;
-          showQuestionResults(pin);
+          advanceQuestion(pin);
           break;
         }
       }
