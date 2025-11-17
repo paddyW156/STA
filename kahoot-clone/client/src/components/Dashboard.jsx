@@ -2,30 +2,33 @@ import { useState, useEffect } from 'react';
 import { useWebSocket } from './WebSocketProvider';
 //import '../styles/Dashboard.css';
 
+//PARA LA GESTION DE LOS QUIZZES DEL USUARIO
+
 export default function Dashboard({ user, onLogout, onCreateNew, onSelectQuiz }) {
-  const [quizzes, setQuizzes] = useState([]);
+  const [quizzes, setQuizzes] = useState([]);//Lista de quizzes del usuario
 
-  const { send, lastMessage } = useWebSocket();
+  const { send, lastMessage } = useWebSocket();//Hooks del WebSocket Provider
 
-  useEffect(() => {
+  useEffect(() => { //Cada vez que cambia el user, pedimos sus quizzes al servidor
     if (user?.username) {
       send({ type: 'GET_QUIZZES', payload: { user: user.username } });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.username]);
 
-  useEffect(() => {
+  useEffect(() => {//Cada vez que llega un nuevo mensaje del servidor
     if (!lastMessage) return;
 
     switch (lastMessage.type) {
       case 'GET_QUIZZES_SUCCESS':
         const serverQuizzes = lastMessage.payload?.quizzes || [];
         setQuizzes(serverQuizzes.map(q => ({ title: q.title, questions: q.questions })));
+        //actualizamos la lista de quizzes
         break;
       
       case 'DELETE_QUIZ_SUCCESS':
         // Actualizar la lista después de eliminar
         send({ type: 'GET_QUIZZES', payload: { user: user.username } });
+        // Volvemos a pedir la lista de quizzes al servidor, el quiz eliminado ya no estará
         break;
 
       case 'DELETE_QUIZ_ERROR':

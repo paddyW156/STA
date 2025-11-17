@@ -5,8 +5,8 @@ import { GoogleLogin } from '@react-oauth/google';
 import '../styles/App.css';
 
 export default function Auth({ onLogin, onBack}) {
-  const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({
+  const [isLogin, setIsLogin] = useState(true);//Controla si es login o registro
+  const [formData, setFormData] = useState({//Datos del formulario, si cambian, se re-renderiza
     username: '',
     email: '',
     password: ''
@@ -16,11 +16,13 @@ export default function Auth({ onLogin, onBack}) {
   const { ws, send, connected, lastMessage } = useWebSocket();
 
   // Debug del provider
+  /*
   useEffect(() => {
     console.log('[Auth] Provider values:', { ws, connected, lastMessage });
   }, [ws, connected, lastMessage]);
+  */
 
-  useEffect(() => {
+  useEffect(() => {// Se ejecuta cuando llega un nuevo mensaje
     console.log('🔄 [Auth] Efecto ejecutándose, lastMessage:', lastMessage);
     if (!lastMessage) {
       console.log('⏭️ [Auth] No hay mensaje, saliendo del efecto');
@@ -30,21 +32,23 @@ export default function Auth({ onLogin, onBack}) {
     console.log('📨 [Auth] Tipo de mensaje:', lastMessage.type);
 
     if (lastMessage.type === 'LOGIN_SUCCESS' || lastMessage.type === 'REGISTER_SUCCESS') {
+      /*
       console.log('✅ [Auth] Login exitoso!');
       console.log('📦 [Auth] Payload recibido:', lastMessage.payload);
       console.log('🎯 [Auth] Llamando a onLogin...');
-      onLogin(lastMessage.payload);
-      console.log('✨ [Auth] onLogin ejecutado');
+      */
+      onLogin(lastMessage.payload); //hay login exitoso, llamamos a onLogin
+      //console.log('✨ [Auth] onLogin ejecutado');
     }
 
     if (lastMessage.type === 'AUTH_ERROR') {
-      console.warn('❌ [Auth] Error:', lastMessage.payload);
+      //console.warn('❌ [Auth] Error:', lastMessage.payload);
       alert(lastMessage.payload.message);
     }
-  }, [lastMessage, onLogin]); // Se ejecuta cuando llega un nuevo mensaje
+  }, [lastMessage, onLogin]); 
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault();//Prevenir recarga de página
 
     if (!connected) {
       alert('Conexión no establecida. Intenta de nuevo.');
@@ -53,7 +57,7 @@ export default function Auth({ onLogin, onBack}) {
 
     console.log('[Auth] Enviando petición de login/registro:', formData);
     const type = isLogin ? 'LOGIN_USER' : 'REGISTER_USER';
-    send({
+    send({ //Enviar petición al servidor
       type,
       payload: formData
     });
@@ -90,20 +94,20 @@ export default function Auth({ onLogin, onBack}) {
         <form onSubmit={handleSubmit} className="auth-form">
           <input type="text" placeholder="Usuario"
             value={formData.username}
-            onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, username: e.target.value })}//Sobreescribir username
             required
             className="auth-input" />
 
           <input type="password" placeholder="Contraseña"
             value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}//Sobreescribir password
             required
             className="auth-input" />
 
           {!isLogin && (
             <input type="email" placeholder="Email"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}//Sobreescribir email
               required
               className="auth-input" />
           )}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-//import './styles/App.css';
+
+//Componentes
 import Home from './components/Home';
 import Auth from './components/Auth';
 import Dashboard from './components/Dashboard';
@@ -19,9 +20,9 @@ export default function App() {
   //usuario host o player
   const [role, setRole] = useState(null);
   
-  //Iniciar websocket (singleton desde WebSocketProvider)
+  //Iniciar websocket y gameState
   const { ws, send } = useWebSocket();
-  const gameState = useGameState(ws, setScreen, role);
+  const gameState = useGameState(ws, setScreen, role);//Cada render de App crea un gameState nuevo
 
   useEffect(() => {
     // Verificar si hay usuario guardado en el LocalStorage
@@ -29,7 +30,7 @@ export default function App() {
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
-  }, []);
+  }, []);//Se ejcuta al montar el componente App
 
   const handleLogin = (userData) => {
     //Guardar usuario y vamos a la pantalla dashboard
@@ -73,7 +74,7 @@ export default function App() {
 
   const renderScreen = () => {
     //Lanzamos cada pantalla
-    switch (screen) {
+    switch (screen) {//Dependiendo del valor de screen
       case 'home':
         return (
           <Home
@@ -89,7 +90,9 @@ export default function App() {
         return <Auth onLogin={handleLogin} onBack={() => setScreen('home')} />;
 
       case 'dashboard':
-        return (
+        return (//Le pasamos las funciones necesarias al dashboard
+          //como logout, crear nuevo quiz o seleccionar uno para iniciar
+          //porque esas tmbién las gestiona App
           <Dashboard
             user={user}
             onLogout={handleLogout}

@@ -1,9 +1,9 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import './index.css';
-import { WebSocketProvider } from './components/WebSocketProvider';
-import { GoogleOAuthProvider } from '@react-oauth/google';
+import React from 'react'; //Librería principal de React
+import ReactDOM from 'react-dom/client'; //Métodos para renderizar en el DOM
+import App from './App'; //Componente principal de la aplicación
+import './index.css'; //Estilos globales
+import { WebSocketProvider } from './components/WebSocketProvider';//Contexto WebSocket
+import { GoogleOAuthProvider } from '@react-oauth/google'; //Provedor de OAuth de Google
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(

@@ -1,38 +1,40 @@
 import { useState, useEffect, useRef } from 'react';
 
+//ESTADO GLOBAL DEL JUEGO
+
 export function useGameState(ws, setScreen, role) {
-  const [pin, setPin] = useState('');
-  const [username, setUsername] = useState('');
-  const [players, setPlayers] = useState([]);
-  const [currentQuestion, setCurrentQuestion] = useState(null);
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [totalQuestions, setTotalQuestions] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(20);
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [answerSubmitted, setAnswerSubmitted] = useState(false);
-  const [scores, setScores] = useState({});
-  const [correctAnswer, setCorrectAnswer] = useState(null);
-  const [answerStats, setAnswerStats] = useState([0, 0, 0, 0]);
-  const [pointsThisQuestion, setPointsThisQuestion] = useState({});
-  const [showResults, setShowResults] = useState(false);
-  const [finalScores, setFinalScores] = useState([]);
-  const [answeredPlayers, setAnsweredPlayers] = useState([]);
+  const [pin, setPin] = useState(''); //PIN del juego actual
+  const [username, setUsername] = useState('');//Nombre del jugador
+  const [players, setPlayers] = useState([]);//Jugadores en la partida
+  const [currentQuestion, setCurrentQuestion] = useState(null);//Pregunta actual
+  const [questionIndex, setQuestionIndex] = useState(0);//Índice de la pregunta actual
+  const [totalQuestions, setTotalQuestions] = useState(0);//Total de preguntas en el juego
+  const [timeLeft, setTimeLeft] = useState(20);//Tiempo restante para responder
+  const [selectedAnswer, setSelectedAnswer] = useState(null);//Respuesta seleccionada por el jugador
+  const [answerSubmitted, setAnswerSubmitted] = useState(false);//Si el jugador ha enviado su respuesta
+  const [scores, setScores] = useState({});//Puntuaciones de los jugadores
+  const [correctAnswer, setCorrectAnswer] = useState(null);//Respuesta correcta de la pregunta actual
+  const [answerStats, setAnswerStats] = useState([0, 0, 0, 0]);//Estadísticas de respuestas (número de jugadores que eligieron cada opción)
+  const [pointsThisQuestion, setPointsThisQuestion] = useState({});//Puntos obtenidos por jugador en la pregunta actual
+  const [showResults, setShowResults] = useState(false);//Si se deben mostrar los resultados de la pregunta
+  const [finalScores, setFinalScores] = useState([]);//Puntuaciones finales al terminar el juego
+  const [answeredPlayers, setAnsweredPlayers] = useState([]);//Jugadores que han respondido la pregunta actual
 
-  const questionStartTime = useRef(null);
-  const timerInterval = useRef(null);
+  const questionStartTime = useRef(null);//Marca de tiempo cuando comenzó la pregunta, no necesita re-renderizarse
+  const timerInterval = useRef(null);//Referencia al intervalo del temporizador
+  //Se usa useRef para almacenar valores que no necesitan causar re-renders, react no se entera de los cambios en useRef
 
-  useEffect(() => {
+  useEffect(() => {//Si se cambia el WebSocket, la pantalla o el rol, configuramos los listeners
     if (!ws) return;
 
-    // En lugar de asignar onmessage, agregamos un event listener
-    const handleMessage = (event) => {
-      const message = JSON.parse(event.data);
+    ws.addEventListener('message', handleMessage);//Cada vez que llega un mensaje, se llama a handleMessage
+
+    const handleMessage = (event) => {//Ha llegado un mensaje del servidor
+      const message = JSON.parse(event.data); //PArseamos el mensaje JSON
       console.log('🎮 [GameState] Mensaje recibido:', message.type);
 
       switch (message.type) {
-        // Handle auth success messages so we can capture username for game flows.
-        // Navigation should be handled by App (handleLogin). Here we only store
-        // username when available and log the payload for debugging.
+        //Según el tipo de mensaje, actualizamos el estado del juego
 
         case 'GAME_CREATED':
           setPin(message.payload.pin);
@@ -121,9 +123,6 @@ export function useGameState(ws, setScreen, role) {
       }
     };
 
-    // Agregar el listener
-    ws.addEventListener('message', handleMessage);
-
     return () => {
       // Limpiar el listener al desmontar
       ws.removeEventListener('message', handleMessage);
@@ -134,8 +133,8 @@ export function useGameState(ws, setScreen, role) {
   // useRef para evitar re-renders innecesarios en componentes que usan timeLeft
   const timeLeftRef = useRef(null);
 
-  const startTimer = (duration) => {
-    if (timerInterval.current) clearInterval(timerInterval.current);
+  const startTimer = (duration) => { //Durtion son los segundos para la pregunta
+    if (timerInterval.current) clearInterval(timerInterval.current); //Limpiamos cualquier temporizador previo
 
     let timeRemaining = duration;
     timeLeftRef.current = timeRemaining;

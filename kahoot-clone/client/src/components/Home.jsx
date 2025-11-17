@@ -7,7 +7,7 @@ export default function Home({ onCreateRoom, onJoinGame }) {
 
   const handleJoin = () => {
     if (pin && username) {
-      onJoinGame(pin, username);
+      onJoinGame(pin, username); //UseGameState joinGame, accedemos desde App
     } else {
       alert('Por favor completa todos los campos.');
     }
@@ -19,7 +19,7 @@ export default function Home({ onCreateRoom, onJoinGame }) {
         <h1 className="home-title">QuizMaster!</h1>
         <div className="home-content">
           <button 
-            onClick={onCreateRoom}
+            onClick={onCreateRoom} //Llama a App para gestionar la creación de sala
             className="btn btn-create">
             Crear Sala
           </button>
@@ -30,7 +30,7 @@ export default function Home({ onCreateRoom, onJoinGame }) {
             type="text"
             placeholder="PIN del juego"
             value={pin}
-            onChange={(e) => setPin(e.target.value)}
+            onChange={(e) => setPin(e.target.value)}//Actualizar pin
             className="input-pin"
             maxLength={6}
           />
@@ -39,7 +39,7 @@ export default function Home({ onCreateRoom, onJoinGame }) {
             type="text"
             placeholder="Tu nombre"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => setUsername(e.target.value)}//Actualizar username
             className="input-username"
           />
           
