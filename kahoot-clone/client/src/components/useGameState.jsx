@@ -25,9 +25,8 @@ export function useGameState(ws, setScreen, role) {
   //Se usa useRef para almacenar valores que no necesitan causar re-renders, react no se entera de los cambios en useRef
 
   useEffect(() => {//Si se cambia el WebSocket, la pantalla o el rol, configuramos los listeners
+    //Se usa useEffect para configurar listeners y manejar mensajes entrantes del servidor
     if (!ws) return;
-
-    ws.addEventListener('message', handleMessage);//Cada vez que llega un mensaje, se llama a handleMessage
 
     const handleMessage = (event) => {//Ha llegado un mensaje del servidor
       const message = JSON.parse(event.data); //PArseamos el mensaje JSON
@@ -123,6 +122,8 @@ export function useGameState(ws, setScreen, role) {
       }
     };
 
+    ws.addEventListener('message', handleMessage);//Cada vez que llega un mensaje, se llama a handleMessage
+
     return () => {
       // Limpiar el listener al desmontar
       ws.removeEventListener('message', handleMessage);
@@ -145,7 +146,7 @@ export function useGameState(ws, setScreen, role) {
       timeLeftRef.current = timeRemaining;
       
       // Actualizar el estado solo cada segundo (no cada tick)
-      setTimeLeft(timeRemaining);
+      setTimeLeft(timeRemaining); //Actualiza UI
 
       if (timeRemaining <= 0) {
         clearInterval(timerInterval.current);
@@ -229,6 +230,7 @@ export function useGameState(ws, setScreen, role) {
     if (timerInterval.current) clearInterval(timerInterval.current);
   };
 
+  //Devolvemos el estado y las funciones para manejar el juego
   return {
     pin,
     username,

@@ -32,17 +32,15 @@ export function WebSocketProvider({ children, port = 8080 }) {
     }
 
     websocket.onopen = () => {// Cuando la conexión se abre
-      console.log('✓ Conectado al servidor', url);
+      console.log('Conectado al servidor', url);
       setWs(websocket);
       wsRef.current = websocket;
       setConnected(true);
     };
 
     websocket.onerror = (error) => {// Manejo de errores
-      console.error('❌ Error WebSocket:', url, error);
+      console.error('Error WebSocket:', url, error);
     };
-
-    websocket.onmessage = handleMessage;//Recibir mensajes del servidor
 
     // Handler estable que usa refs
     const handleMessage = (event) => {
@@ -61,9 +59,12 @@ export function WebSocketProvider({ children, port = 8080 }) {
       }
     };
 
+    
+    websocket.onmessage = handleMessage;//Recibir mensajes del servidor
+
 
     websocket.onclose = (ev) => {//Si se cierra la conexión, limpiamos
-      console.log('✗ Desconectado del servidor', url, ev && ev.code);
+      console.log('Desconectado del servidor', url, ev && ev.code);
       setConnected(false);
       setWs(null);
       wsRef.current = null;
@@ -101,10 +102,9 @@ export function WebSocketProvider({ children, port = 8080 }) {
 export function useWebSocket() {
   //const { ws, connected, lastMessage, send } = useWebSocket();
   //Es una funcion que devuelve el contexto del WebSocket
+  //Esto es como usar en todas partes, useContext(WSContext)
   const ctx = useContext(WSContext);
   if (!ctx) {
-    // For backward compatibility, return a minimal API that mirrors old behavior
-    // (returns null ws). Users should wrap app with WebSocketProvider.
     return { ws: null, connected: false, lastMessage: null, send: () => false };
   }
   return ctx;

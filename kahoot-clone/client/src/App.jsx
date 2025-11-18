@@ -14,7 +14,7 @@ import { useGameState } from './components/useGameState';
 
 export default function App() {
   //screen controla qué vista se muestra
-  const [screen, setScreen] = useState('home');
+  const [screen, setScreen] = useState('home'); //Empezamos en home
   //user tiene la información del usuario logeado
   const [user, setUser] = useState(null);
   //usuario host o player
